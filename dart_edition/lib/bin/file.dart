@@ -7,7 +7,7 @@ import "package:path/path.dart" as path;
 /// 檔案操作服務類
 class FileService {
   static const String defaultFileName = "MonogatariProject";
-  static const String projectExtension = ".mga"; // MonogatariAssistant 專案檔案
+  static const String projectExtension = ".mnproj"; // MonogatariAssistant 專案檔案
   static const String textExtension = ".txt";
   static const String markdownExtension = ".md";
 
@@ -25,7 +25,7 @@ class FileService {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ["mga", "xml", "txt"],
+        allowedExtensions: ["mnproj", "mga", "xml", "txt"], // 支援新舊格式
         withData: true,
       );
 
@@ -68,7 +68,7 @@ class FileService {
         dialogTitle: "儲存專案檔案",
         fileName: "${projectFile.fileName}$projectExtension",
         type: FileType.custom,
-        allowedExtensions: ["mga"],
+        allowedExtensions: ["mnproj"],
       );
 
       // 如果使用者取消儲存，FilePicker 會回傳 null，處理此情況以符合 null-safety
@@ -201,54 +201,61 @@ class FileService {
     
     return """<?xml version="1.0" encoding="UTF-8"?>
 <Project>
-  <Type>BaseInfo</Type>
-  <BaseInfo>
-    <Title></Title>
+<Type>
+  <Name>BaseInfo</Name>
+  <General>
+    <BookName></BookName>
     <Author></Author>
-    <Description></Description>
+    <Purpose></Purpose>
+    <ToRecap></ToRecap>
+    <StoryType></StoryType>
+    <Intro></Intro>
     <LatestSave>$now</LatestSave>
-  </BaseInfo>
-  
-  <Type>ChapterSelection</Type>
-  <ChapterSelection>
-    <Segment>
-      <SegmentName>第一部</SegmentName>
-      <SegmentUUID>${_generateUUID()}</SegmentUUID>
-      <Chapter>
-        <ChapterName>第一章</ChapterName>
-        <ChapterContent></ChapterContent>
-        <ChapterUUID>${_generateUUID()}</ChapterUUID>
-      </Chapter>
-    </Segment>
-  </ChapterSelection>
-  
-  <Type>Outline</Type>
-  <Outline>
-    <Storyline>
-      <StorylineName>主線劇情</StorylineName>
-      <StorylineType>起</StorylineType>
-      <Memo></Memo>
-      <ChapterUUID>${_generateUUID()}</ChapterUUID>
-    </Storyline>
-  </Outline>
-  
-  <Type>WorldSettings</Type>
-  <WorldSettings>
-    <Location>
-      <LocalName>主要場景</LocalName>
-      <Description></Description>
-      <LocationUUID>${_generateUUID()}</LocationUUID>
-    </Location>
-  </WorldSettings>
-  
-  <Type>Characters</Type>
-  <Characters>
-    <Character>
-      <Name>主角</Name>
-      <Description></Description>
-      <CharacterUUID>${_generateUUID()}</CharacterUUID>
-    </Character>
-  </Characters>
+  </General>
+  <Tags>
+  </Tags>
+  <Stats>
+    <TotalWords>0</TotalWords>
+    <NowWords>0</NowWords>
+  </Stats>
+</Type>
+
+<Type>
+  <Name>ChapterSelection</Name>
+  <Segment Name="第一部" UUID="${_generateUUID()}">
+    <Chapter Name="第一章" UUID="${_generateUUID()}">
+      <Content></Content>
+    </Chapter>
+  </Segment>
+</Type>
+
+<Type>
+  <Name>Outline</Name>
+  <Storyline>
+    <StorylineName>主線劇情</StorylineName>
+    <StorylineType>起</StorylineType>
+    <Memo></Memo>
+    <ChapterUUID>${_generateUUID()}</ChapterUUID>
+  </Storyline>
+</Type>
+
+<Type>
+  <Name>WorldSettings</Name>
+  <Location>
+    <LocalName>主要場景</LocalName>
+    <Description></Description>
+    <LocationUUID>${_generateUUID()}</LocationUUID>
+  </Location>
+</Type>
+
+<Type>
+  <Name>Characters</Name>
+  <Character>
+    <Name>主角</Name>
+    <Description></Description>
+    <CharacterUUID>${_generateUUID()}</CharacterUUID>
+  </Character>
+</Type>
 </Project>""";
   }
 
@@ -347,7 +354,11 @@ class XMLParser {
   /// 從XML內容中提取特定類型的區塊
   static List<String> extractTypeBlocks(String xmlContent, String type) {
     final blocks = <String>[];
-    final pattern = RegExp("<Type>$type</Type>[\\s\\S]*?(?=<Type>|</Project>)", multiLine: true);
+    // 更新正則表達式以匹配新格式：<Type><Name>typeName</Name>...</Type>
+    final pattern = RegExp(
+      "<Type>\\s*<Name>$type</Name>[\\s\\S]*?</Type>",
+      multiLine: true,
+    );
     final matches = pattern.allMatches(xmlContent);
     
     for (final match in matches) {
@@ -364,8 +375,15 @@ class XMLParser {
     return match?.group(1)?.trim();
   }
   
+  /// 提取XML標籤的屬性值
+  static String? extractAttribute(String xml, String tagName, String attrName) {
+    final pattern = RegExp('<$tagName[^>]*\\s$attrName="([^"]*)"', dotAll: true);
+    final match = pattern.firstMatch(xml);
+    return match?.group(1);
+  }
+  
   /// 檢查XML是否包含指定的類型區塊
   static bool hasTypeBlock(String xmlContent, String type) {
-    return xmlContent.contains("<Type>$type</Type>");
+    return xmlContent.contains("<Name>$type</Name>");
   }
 }

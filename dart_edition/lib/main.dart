@@ -3,6 +3,7 @@ import "package:flutter/services.dart";
 import "bin/file.dart";
 import "modules/baseinfoview.dart" as BaseInfoModule;
 import "modules/chapterselectionview.dart" as ChapterModule;
+import "modules/AbortView.dart" as AboutModule;
 
 void main() {
   runApp(const MainApp());
@@ -295,8 +296,8 @@ class _ContentViewState extends State<ContentView> {
 
   // 手機佈局（使用 BottomNavigationBar）
   Widget _buildMobileLayout() {
-    // 檢查是否在編輯器頁面（slidePage > 8 表示編輯器）
-    bool isEditorMode = slidePage > 8;
+    // 檢查是否在編輯器頁面（slidePage > 9 表示編輯器）
+    bool isEditorMode = slidePage > 9;
     
     return Scaffold(
       body: IndexedStack(
@@ -315,10 +316,10 @@ class _ContentViewState extends State<ContentView> {
           setState(() {
             if (index == 0) {
               // 切換到功能頁面，保持當前的功能選項
-              if (slidePage > 8) slidePage = 0; // 如果在編輯器，切回第一個功能
+              if (slidePage > 9) slidePage = 0; // 如果在編輯器，切回第一個功能
             } else {
               // 切換到編輯器
-              slidePage = 9; // 使用 9 作為編輯器的標識
+              slidePage = 10; // 使用 10 作為編輯器的標識
             }
           });
         },
@@ -349,7 +350,7 @@ class _ContentViewState extends State<ContentView> {
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Row(
               children: [
-                for (int i = 0; i < 9; i++)
+                for (int i = 0; i < 10; i++)
                   _buildMobileNavigationChip(i),
               ],
             ),
@@ -359,9 +360,9 @@ class _ContentViewState extends State<ContentView> {
         // 功能頁面內容 - 使用 IndexedStack 保持狀態
         Expanded(
           child: IndexedStack(
-            index: slidePage.clamp(0, 8),
+            index: slidePage.clamp(0, 9),
             children: [
-              for (int i = 0; i < 9; i++)
+              for (int i = 0; i < 10; i++)
                 _buildSpecificPageContent(i),
             ],
           ),
@@ -382,6 +383,7 @@ class _ContentViewState extends State<ContentView> {
       {"icon": Icons.search, "label": "搜尋取代"},
       {"icon": Icons.spellcheck, "label": "文本校正"},
       {"icon": Icons.auto_awesome, "label": "Copilot"},
+      {"icon": Icons.info, "label": "關於"},
     ];
     
     final function = functions[index];
@@ -445,6 +447,8 @@ class _ContentViewState extends State<ContentView> {
         return _buildProofreadingView();
       case 8:
         return _buildCopilotView();
+      case 9:
+        return _buildAboutView();
       default:
         return Center(child: Text("Page ${pageIndex + 1}"));
     }
@@ -454,7 +458,7 @@ class _ContentViewState extends State<ContentView> {
   Widget _buildDesktopLayout() {
     return Row(
       children: [
-        // NavigationRail - 包裝在可滾動容器中
+        // NavigationRail - 包裝在可滾动容器中
         SingleChildScrollView(
           child: IntrinsicHeight(
             child: NavigationRail(
@@ -506,6 +510,10 @@ class _ContentViewState extends State<ContentView> {
                   icon: Icon(Icons.auto_awesome),
                   label: Text("Copilot"),
                 ),
+                NavigationRailDestination(
+                  icon: Icon(Icons.info),
+                  label: Text("關於"),
+                ),
               ],
             ),
           ),
@@ -544,11 +552,9 @@ class _ContentViewState extends State<ContentView> {
   
   // 獲取 NavigationRail 的選中索引
   int _getNavigationIndex() {
-    return slidePage > 8 ? 0 : slidePage.clamp(0, 8);
+    return slidePage > 9 ? 0 : slidePage.clamp(0, 9);
   }
-  
 
-  
   // 頁面內容
   Widget _buildPageContent() {
     return Container(
@@ -559,7 +565,7 @@ class _ContentViewState extends State<ContentView> {
   
   // 頁面視圖
   Widget _buildPageView() {
-    int pageIndex = slidePage > 8 ? 0 : slidePage; // 如果在編輯器模式，預設顯示第一頁
+    int pageIndex = slidePage > 9 ? 0 : slidePage; // 如果在編輯器模式，預設顯示第一頁
     
     switch (pageIndex) {
       case 0:
@@ -580,6 +586,8 @@ class _ContentViewState extends State<ContentView> {
         return _buildProofreadingView();
       case 8:
         return _buildCopilotView();
+      case 9:
+        return _buildAboutView();
       default:
         return Center(child: Text("Page ${pageIndex + 1}"));
     }
@@ -826,6 +834,10 @@ class _ContentViewState extends State<ContentView> {
       description: "Copilot 功能開發中...",
       color: Colors.deepPurple,
     );
+  }
+  
+  Widget _buildAboutView() {
+    return const AboutModule.AboutView();
   }
   
   // 通用的佔位頁面
@@ -1205,61 +1217,60 @@ class _ContentViewState extends State<ContentView> {
     buffer.writeln("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
     buffer.writeln("<Project>");
     
-    // BaseInfo (使用新的 BaseInfoCodec)
+    // BaseInfo (使用新的格式)
     final baseInfoXml = BaseInfoModule.BaseInfoCodec.saveXML(
       data: baseInfoData,
       totalWords: totalWords,
       contentText: contentText,
     );
     if (baseInfoXml != null) {
-      buffer.write("  ");
-      buffer.write(baseInfoXml.replaceAll("\n", "\n  "));
+      buffer.writeln(baseInfoXml);
     }
     
-    // ChapterSelection (使用新的 ChapterSelectionCodec)
+    // ChapterSelection (使用新的格式)
     final chapterXml = ChapterModule.ChapterSelectionCodec.saveXML(segmentsData);
     if (chapterXml != null) {
-      buffer.write("  ");
-      buffer.write(chapterXml.replaceAll("\n", "\n  "));
+      buffer.writeln(chapterXml);
     }
     
     // Outline
-    buffer.writeln("  <Type>Outline</Type>");
-    buffer.writeln("  <Outline>");
+    buffer.writeln("<Type>");
+    buffer.writeln("  <Name>Outline</Name>");
     for (final storyline in outlineData) {
-      buffer.writeln("    <Storyline>");
-      buffer.writeln("      <StorylineName>${_escapeXml(storyline.storylineName)}</StorylineName>");
-      buffer.writeln("      <StorylineType>${_escapeXml(storyline.storylineType)}</StorylineType>");
-      buffer.writeln("      <Memo>${_escapeXml(storyline.memo)}</Memo>");
-      buffer.writeln("      <ChapterUUID>${storyline.chapterUUID}</ChapterUUID>");
-      buffer.writeln("    </Storyline>");
+      buffer.writeln("  <Storyline>");
+      buffer.writeln("    <StorylineName>${_escapeXml(storyline.storylineName)}</StorylineName>");
+      buffer.writeln("    <StorylineType>${_escapeXml(storyline.storylineType)}</StorylineType>");
+      buffer.writeln("    <Memo>${_escapeXml(storyline.memo)}</Memo>");
+      buffer.writeln("    <ChapterUUID>${storyline.chapterUUID}</ChapterUUID>");
+      buffer.writeln("  </Storyline>");
     }
-    buffer.writeln("  </Outline>");
+    buffer.writeln("</Type>");
     
     // WorldSettings
-    buffer.writeln("  <Type>WorldSettings</Type>");
-    buffer.writeln("  <WorldSettings>");
+    buffer.writeln();
+    buffer.writeln("<Type>");
+    buffer.writeln("  <Name>WorldSettings</Name>");
     for (final location in worldSettingsData) {
-      buffer.writeln("    <Location>");
-      buffer.writeln("      <LocalName>${_escapeXml(location.localName)}</LocalName>");
-      buffer.writeln("      <Description>${_escapeXml(location.description)}</Description>");
-      buffer.writeln("      <LocationUUID>${location.locationUUID}</LocationUUID>");
-      buffer.writeln("    </Location>");
+      buffer.writeln("  <Location>");
+      buffer.writeln("    <LocalName>${_escapeXml(location.localName)}</LocalName>");
+      buffer.writeln("    <Description>${_escapeXml(location.description)}</Description>");
+      buffer.writeln("    <LocationUUID>${location.locationUUID}</LocationUUID>");
+      buffer.writeln("  </Location>");
     }
-    buffer.writeln("  </WorldSettings>");
+    buffer.writeln("</Type>");
     
     // Characters
-    buffer.writeln("  <Type>Characters</Type>");
-    buffer.writeln("  <Characters>");
+    buffer.writeln();
+    buffer.writeln("<Type>");
+    buffer.writeln("  <Name>Characters</Name>");
     for (final character in characterData) {
-      buffer.writeln("    <Character>");
-      buffer.writeln("      <Name>${_escapeXml(character.name)}</Name>");
-      buffer.writeln("      <Description>${_escapeXml(character.description)}</Description>");
-      buffer.writeln("      <CharacterUUID>${character.characterUUID}</CharacterUUID>");
-      buffer.writeln("    </Character>");
+      buffer.writeln("  <Character>");
+      buffer.writeln("    <Name>${_escapeXml(character.name)}</Name>");
+      buffer.writeln("    <Description>${_escapeXml(character.description)}</Description>");
+      buffer.writeln("    <CharacterUUID>${character.characterUUID}</CharacterUUID>");
+      buffer.writeln("  </Character>");
     }
-    buffer.writeln("  </Characters>");
-    
+    buffer.writeln("</Type>");
     buffer.writeln("</Project>");
     
     return buffer.toString();

@@ -1,5 +1,5 @@
-name: dart_edition
-description: "A new Flutter project."
+name: monogatari_assistant
+description: "A writing assistant app for story creators"
 publish_to: 'none'
 version: 0.1.0
 
@@ -18,6 +18,33 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.13.1
 
 flutter:
   uses-material-design: true
+  
+  # 添加資源文件
+  assets:
+    - assets/icon/Title.png
+
+# 配置應用圖標
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/app_icon.png"
+  min_sdk_android: 21
+  # 如果需要自適應圖標（建議）
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/icon/app_icon.png"
+  # Windows
+  windows:
+    generate: true
+    image_path: "assets/icon/app_icon.png"
+  # macOS
+  macos:
+    generate: true
+    image_path: "assets/icon/app_icon.png"
+  # Web
+  web:
+    generate: true
+    image_path: "assets/icon/app_icon.png"
